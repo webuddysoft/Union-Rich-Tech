@@ -38,4 +38,4 @@ I created the task for this.
 You can run this task using the below command.
 php artisan schedule:work
 
-Or you can add "php artisan schedule:run
+Or you can add "php artisan schedule:run" to cron job.
