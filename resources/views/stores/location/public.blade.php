@@ -8,23 +8,21 @@
         
         <div class="py-12">
             <div class="max-w-xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg shadow-xl">
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg shadow-xl" x-data="pageData" x-init="initApp()" >
                     <div class="flex flex-col sm:flex-row justify-between border-b border-gray-200 p-6">
-                        <div class="px-2">Shopper Limit: <span class="badge bg-secondary font-bold">{{ $location["shopper_limit"] }}</span></div>
-                        <div class="px-2">Active: <span class="text-green-400 font-bold">{{ $activeCount }}</span></div>
-                        <div class="px-2">Pending: <span class="text-blue-400 font-bold">{{ $pendingCount }}</span></div>
+                        <div class="px-2">Shopper Limit: <span class="badge bg-secondary font-bold" x-text="shopperLimit"></span></div>
+                        <div class="px-2">Active: <span class="text-green-400 font-bold" x-text="activeCount"></span></div>
+                        <div class="px-2">Pending: <span class="text-blue-400 font-bold" x-text="pendingCount"></span></div>
                     </div>
                     
-                    @if ($nextShoppers->count() > 0)
                     <div class="border-b border-gray-200 px-6 py-2">
                         <h2 class="font-bold text-lg text-left">Next Shoppers</h2>
-                        <div class="flex flex-col sm:flex-row justify-between ">
-                            @foreach ($nextShoppers as $shopper)
-                            <span>{{ $loop->index + 1 }}. {{ $shopper->first_name }} {{ $shopper->last_name }}</span>
-                            @endforeach
+                        <div class="flex flex-col sm:flex-row">
+                            <template x-for="shopper in lastShoppers" :key="shopper.id">
+                                <span x-text="shopper.first_name + ' ' +  shopper.last_name" class="mr-5"></span>
+                            </template>
                         </div>
                     </div>
-                    @endif
 
                     <div class="flex flex-col bg-gray-200 bg-opacity-25 p-6">
                         <h2 class="font-bold text-lg text-center mb-3">Check-in information</h2>
@@ -77,4 +75,42 @@
             </div>
         </div>
     </div>
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('pageData', () => ({
+                shopperLimit: {{ $location["shopper_limit"] }},
+                activeCount: {{ $activeCount }},
+                pendingCount: {{ $pendingCount }},
+                lastShoppers: {!! json_encode(array_values($lastShoppers->toArray())) !!},
+                refreshInterval: 10,
+                initApp() {
+                    setInterval(() => {
+                        this.reloadData()
+                    }, this.refreshInterval * 1000);
+                },
+                reloadData() {
+                    fetch('{{ route("public.location", ['location' => $location['uuid']]) }}', {
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.status === 'success') {
+                            this.refreshTime = new Date()
+                            this.shoppers = res.shoppers
+                            this.activeCount = res.activeCount
+                            this.pendingCount = res.pendingCount
+                            this.completedCount = res.completedCount
+                        }
+                    })
+                    .catch(e => {
+                        
+                    })
+                    .finally(() => {
+                    })
+                }
+            }))
+        })
+    </script>
 </x-guest-layout>

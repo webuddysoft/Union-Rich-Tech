@@ -47,14 +47,10 @@ class LocationController extends Controller
      * @param Location $location
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View
      */
-    public function public(Location $location)
+    public function public(Request $request, Location $location)
     {
         //The last shopper information stored in session
         $shopperId = session("shopper_id", null);
-        // $currentShopper = Shopper::find('')
-        // if ($shopperId) {
-
-        // }
 
         //Getting the number of active & pending shoppers
         $activeCount = $this->shopper->count([
@@ -67,13 +63,23 @@ class LocationController extends Controller
         ]);
 
         //The top three shoppers in the pending ones
-        $nextShoppers = $location->shoppers()->where('status_id', 3)->orderBy('check_in', 'DESC')->limit(3)->get(); 
+        $lastShoppers = $location->shoppers()->where('status_id', Status::getIdByName("Active"))->orderBy('check_in', 'DESC')->limit(3)->get(); 
 
-        return view('stores.location.public')
-            ->with('location', $location)
-            ->with('activeCount', $activeCount)
-            ->with('pendingCount', $pendingCount)
-            ->with('nextShoppers', $nextShoppers);
+        if ($request->wantsJson()) {
+            return response()->json([
+                'status' => 'success',
+                'location' => $location,
+                'activeCount' => $activeCount,
+                'pendingCount' => $pendingCount,
+                'lastShoppers' => $lastShoppers->toArray()
+            ]);
+        } else {
+            return view('stores.location.public')
+                ->with('location', $location)
+                ->with('activeCount', $activeCount)
+                ->with('pendingCount', $pendingCount)
+                ->with('lastShoppers', $lastShoppers);
+        }
     }
 
     /**
